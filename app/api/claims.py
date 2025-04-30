@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, Path, Depends
 from app.api.auth import get_current_user
-from app.models.base import APIResponse, APIError
+from app.models.base import APIResponse, APIError, api_response
 from app.models.claim import ClaimSummary, ClaimDetail, ClaimCreateRequest, ClaimCreateResponse
 from typing import List, Optional
 
@@ -14,7 +14,10 @@ def list_claims(user=Depends(get_current_user),
     page: int = Query(1, ge=1, description="Page number for pagination"),
     page_size: int = Query(10, ge=1, le=100, description="Page size for pagination")
 ) -> APIResponse[List[ClaimSummary]]:
-    """Return a list of all user claims with optional filters and pagination (mocked)."""
+    """
+    Returns a list of all user claims with optional filters and pagination (mocked).
+    Uses api_response to ensure the HTTP status code matches the status_code in the response body.
+    """
     data = [
         ClaimSummary(
             id="CLM001",
@@ -38,11 +41,14 @@ def list_claims(user=Depends(get_current_user),
     # Optionally filter by policy_id
     if policy_id:
         data = [c for c in data if c.policy_id == policy_id]
-    return APIResponse(data=data, error=None, count=len(data), status_code=200)
+    return api_response(data=data, count=len(data), status_code=200)
 
 @router.get("/{id}", response_model=APIResponse[ClaimDetail])
 def get_claim(id: str, user=Depends(get_current_user)) -> APIResponse[ClaimDetail]:
-    """Return details for a specific claim (mocked)."""
+    """
+    Returns details for a specific claim (mocked).
+    Uses api_response to ensure the HTTP status code matches the status_code in the response body.
+    """
     detail = ClaimDetail(
         id=id,
         claim_number=id,
@@ -52,10 +58,14 @@ def get_claim(id: str, user=Depends(get_current_user)) -> APIResponse[ClaimDetai
         policy_id="HOM123" if id == "CLM001" else "AUT456",
         contract_name="Home Insurance Basic" if id == "CLM001" else "Auto Insurance Plus"
     )
-    return APIResponse(data=detail, error=None, count=None, status_code=200)
+    return api_response(data=detail, status_code=200)
 
 @router.post("", response_model=APIResponse[ClaimCreateResponse])
 def create_claim(data: ClaimCreateRequest, user=Depends(get_current_user)) -> APIResponse[ClaimCreateResponse]:
+    """
+    Creates a new claim (mocked).
+    Uses api_response to ensure the HTTP status code matches the status_code in the response body.
+    """
     response = ClaimCreateResponse(
         id="CLM999",
         claim_number="CLM999",
@@ -65,4 +75,4 @@ def create_claim(data: ClaimCreateRequest, user=Depends(get_current_user)) -> AP
         policy_id=data.policy_id,
         contract_name="Home Insurance Basic" if data.policy_id == "HOM123" else "Auto Insurance Plus"
     )
-    return APIResponse(data=response, error=None, count=None, status_code=201)
+    return api_response(data=response, status_code=201)

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Query, UploadFile, File, Depends
 from pydantic import BaseModel
 from typing import List, Optional
 from app.api.auth import get_current_user
-from app.models.base import APIResponse, APIError
+from app.models.base import APIResponse, APIError, api_response
 
 router = APIRouter()
 
@@ -53,7 +53,10 @@ def list_documents(user=Depends(get_current_user),
     page: int = Query(1, ge=1, description="Page number for pagination"),
     page_size: int = Query(10, ge=1, le=100, description="Page size for pagination")
 ) -> APIResponse[List[DocumentSummary]]:
-    """Return a list of all user documents with optional filters and pagination (mocked)."""
+    """
+    Returns a list of all user documents with optional filters and pagination (mocked).
+    Uses api_response to ensure the HTTP status code matches the status_code in the response body.
+    """
     data = [
         DocumentSummary(
             id="DOC001",
@@ -74,11 +77,14 @@ def list_documents(user=Depends(get_current_user),
             type="pdf"
         )
     ]
-    return APIResponse(data=data, error=None, count=len(data), status_code=200)
+    return api_response(data=data, count=len(data), status_code=200)
 
 @router.get("/{id}", response_model=APIResponse[DocumentDetail])
 def get_document(id: str, user=Depends(get_current_user)) -> APIResponse[DocumentDetail]:
-    """Return details for a specific document (mocked)."""
+    """
+    Returns details for a specific document (mocked).
+    Uses api_response to ensure the HTTP status code matches the status_code in the response body.
+    """
     detail = DocumentDetail(
         id=id,
         name="Policy Contract.pdf" if id == "DOC001" else "Coverage Certificate.pdf",
@@ -89,7 +95,7 @@ def get_document(id: str, user=Depends(get_current_user)) -> APIResponse[Documen
         type="pdf",
         url=f"https://example.com/documents/{id}.pdf"
     )
-    return APIResponse(data=detail, error=None, count=None, status_code=200)
+    return api_response(data=detail, status_code=200)
 
 @router.post("", response_model=APIResponse[DocumentUploadResponse])
 def upload_document(file: UploadFile = File(...),
@@ -100,7 +106,10 @@ def upload_document(file: UploadFile = File(...),
     billing: Optional[str] = Query(None),
     type: str = Query(...),
     user=Depends(get_current_user)) -> APIResponse[DocumentUploadResponse]:
-    """Upload a new document (mocked)."""
+    """
+    Uploads a new document (mocked).
+    Uses api_response to ensure the HTTP status code matches the status_code in the response body.
+    """
     response = DocumentUploadResponse(
         id="DOC999",
         name=name,
@@ -111,4 +120,4 @@ def upload_document(file: UploadFile = File(...),
         type=type,
         url=f"https://example.com/documents/DOC999.pdf"
     )
-    return APIResponse(data=response, error=None, count=None, status_code=201) 
+    return api_response(data=response, status_code=201) 

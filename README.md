@@ -269,3 +269,32 @@ def update_claim(
 ```
 
 --- 
+
+## Consistent Response Structure with api_response
+
+All endpoints use the `api_response` helper to return responses. This ensures that:
+- The HTTP status code of the response always matches the `status_code` field in the response body.
+- The response structure is always consistent, following the `APIResponse` and `APIError` models.
+
+**How it works:**
+- Instead of returning the model directly, endpoints return `api_response(...)`.
+- This helper wraps your data in an `APIResponse` and returns a `JSONResponse` with the correct status code.
+
+**Example usage in an endpoint:**
+
+```python
+from app.models.base import APIError, api_response
+
+@router.post("/some-endpoint")
+def some_endpoint():
+    # ... some logic ...
+    if error_condition:
+        return api_response(error=APIError(message="Something went wrong"), status_code=400)
+    return api_response(data={"message": "Success"}, status_code=200)
+```
+
+- The HTTP status code will match the `status_code` in the response body.
+- The error message will be available in the `error` field of the response.
+- No need to raise exceptions or use extra handlers for custom errors—just use this pattern.
+
+--- 

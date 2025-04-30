@@ -191,12 +191,10 @@ All endpoints return mock/example data to facilitate frontend development.
 - **fastapi**: Chosen for its modern, high-performance, and easy-to-use API design, automatic OpenAPI/Swagger generation, and async support. Alternatives: Flask (less async, less automatic docs), Django REST Framework (heavier, more opinionated), Tornado (lower-level, less batteries-included).
 - **uvicorn[standard]**: ASGI server recommended for FastAPI, supports async and hot-reload. Alternatives: Hypercorn (similar, but Uvicorn is more widely used with FastAPI), Daphne (older, less popular for FastAPI).
 - **pydantic**: Used for data validation and serialization, tightly integrated with FastAPI. Alternatives: Marshmallow (not as tightly integrated with FastAPI), dataclasses (less validation features).
-- **python-jose[cryptography]**: For JWT token creation/validation, secure and widely used. Alternatives: PyJWT (less features, less secure by default), authlib (more complex, broader scope).
-- **passlib[bcrypt]**: For secure password hashing. Alternatives: bcrypt (lower-level, less features), argon2-cffi (more secure but less common in Python web stacks).
-- **sqlalchemy**: For ORM/database access, if you want to persist data. Alternatives: Tortoise ORM (async, less mature), peewee (simpler, less features), Django ORM (tied to Django framework).
 - **email-validator**: Required by Pydantic for validating email fields. Alternatives: validate_email (less integrated), custom regex (less robust).
 - **python-multipart**: Required by FastAPI for handling form data and file uploads. Alternatives: starlette's built-in multipart (lower-level, less user-friendly).
 - **supabase**: Official Python client for Supabase, used for authentication and user management.
+- **python-dotenv**: For loading environment variables from .env files. Alternatives: manually loading os.environ, configparser, etc.
 
 ## How to Receive Filters and Parameters in Endpoints
 

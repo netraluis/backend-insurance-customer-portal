@@ -1,51 +1,21 @@
 from fastapi import APIRouter, Query, Path, Depends
-from pydantic import BaseModel
-from typing import List, Optional
 from app.api.auth import get_current_user
+from app.models.base import APIResponse, APIError
+from app.models.claim import ClaimSummary, ClaimDetail, ClaimCreateRequest, ClaimCreateResponse
+from typing import List, Optional
 
 router = APIRouter()
 
-class ClaimSummary(BaseModel):
-    id: str
-    claim_number: str
-    status: str
-    open_date: str
-    description: str
-    policy_id: str
-    contract_name: str
-
-class ClaimDetail(BaseModel):
-    id: str
-    claim_number: str
-    status: str
-    open_date: str
-    description: str
-    policy_id: str
-    contract_name: str
-
-class ClaimCreateRequest(BaseModel):
-    description: str
-    open_date: Optional[str] = None
-
-class ClaimCreateResponse(BaseModel):
-    id: str
-    claim_number: str
-    status: str
-    open_date: str
-    description: str
-    policy_id: str
-    contract_name: str
-
-@router.get("", response_model=List[ClaimSummary])
+@router.get("", response_model=APIResponse[List[ClaimSummary]])
 def list_claims(user=Depends(get_current_user),
     policy_id: Optional[str] = Query(None, description="Filter by policy id"),
     status: Optional[str] = Query(None, description="Filter by claim status"),
     type: Optional[str] = Query(None, description="Filter by claim type"),
     page: int = Query(1, ge=1, description="Page number for pagination"),
     page_size: int = Query(10, ge=1, le=100, description="Page size for pagination")
-) -> List[ClaimSummary]:
+) -> APIResponse[List[ClaimSummary]]:
     """Return a list of all user claims with optional filters and pagination (mocked)."""
-    return [
+    data = [
         ClaimSummary(
             id="CLM001",
             claim_number="CLM001",
@@ -65,11 +35,15 @@ def list_claims(user=Depends(get_current_user),
             contract_name="Auto Insurance Plus"
         )
     ]
+    # Optionally filter by policy_id
+    if policy_id:
+        data = [c for c in data if c.policy_id == policy_id]
+    return APIResponse(data=data, error=None, count=len(data), status_code=200)
 
-@router.get("/{id}", response_model=ClaimDetail)
-def get_claim(id: str, user=Depends(get_current_user)) -> ClaimDetail:
+@router.get("/{id}", response_model=APIResponse[ClaimDetail])
+def get_claim(id: str, user=Depends(get_current_user)) -> APIResponse[ClaimDetail]:
     """Return details for a specific claim (mocked)."""
-    return ClaimDetail(
+    detail = ClaimDetail(
         id=id,
         claim_number=id,
         status="Open" if id == "CLM001" else "Closed",
@@ -78,17 +52,17 @@ def get_claim(id: str, user=Depends(get_current_user)) -> ClaimDetail:
         policy_id="HOM123" if id == "CLM001" else "AUT456",
         contract_name="Home Insurance Basic" if id == "CLM001" else "Auto Insurance Plus"
     )
+    return APIResponse(data=detail, error=None, count=None, status_code=200)
 
-@router.post("/policies/{policy_id}/claims", response_model=ClaimCreateResponse)
-def create_claim(policy_id: str = Path(..., description="Policy ID to which the claim belongs"),
-    data: ClaimCreateRequest = ..., user=Depends(get_current_user)) -> ClaimCreateResponse:
-    """Create a new claim for a given policy (mocked)."""
-    return ClaimCreateResponse(
+@router.post("", response_model=APIResponse[ClaimCreateResponse])
+def create_claim(data: ClaimCreateRequest, user=Depends(get_current_user)) -> APIResponse[ClaimCreateResponse]:
+    response = ClaimCreateResponse(
         id="CLM999",
         claim_number="CLM999",
         status="Open",
         open_date=data.open_date or "2024-06-01",
         description=data.description,
-        policy_id=policy_id,
-        contract_name="Home Insurance Basic" if policy_id == "HOM123" else "Auto Insurance Plus"
-    ) 
+        policy_id=data.policy_id,
+        contract_name="Home Insurance Basic" if data.policy_id == "HOM123" else "Auto Insurance Plus"
+    )
+    return APIResponse(data=response, error=None, count=None, status_code=201)

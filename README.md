@@ -121,9 +121,18 @@ All endpoints return mock/example data for easy testing with the frontend or too
 - `GET /v1/policies/{id}` — Get policy details
 
 ### Claims (**requires Bearer token**)
-- `GET /v1/claims` — List user claims (with filters and pagination)
+- `GET /v1/claims` — List user claims (with filters and pagination, e.g. `/claims?policy_id=HOM123`)
 - `GET /v1/claims/{id}` — Get claim details
-- `POST /v1/policies/{id}/claims` — Create a new claim for a policy
+- `POST /v1/claims` — Create a new claim (send `policy_id` in the body)
+
+Example body for creating a claim:
+```json
+{
+  "description": "Water damage in kitchen",
+  "open_date": "2024-06-01",
+  "policy_id": "HOM123"
+}
+```
 
 ### Documents (**requires Bearer token**)
 - `GET /v1/documents` — List user documents (with filters and pagination)
@@ -188,5 +197,75 @@ All endpoints return mock/example data to facilitate frontend development.
 - **email-validator**: Required by Pydantic for validating email fields. Alternatives: validate_email (less integrated), custom regex (less robust).
 - **python-multipart**: Required by FastAPI for handling form data and file uploads. Alternatives: starlette's built-in multipart (lower-level, less user-friendly).
 - **supabase**: Official Python client for Supabase, used for authentication and user management.
+
+## How to Receive Filters and Parameters in Endpoints
+
+In FastAPI, you can easily receive filters (query parameters), path parameters, and body parameters in your endpoints:
+
+### Query Parameters (Filters)
+
+Use the `Query` helper to define filters in your endpoint function:
+
+```python
+from fastapi import Query
+from typing import Optional
+
+@router.get("/claims")
+def list_claims(
+    status: Optional[str] = Query(None, description="Filter by claim status"),
+    type: Optional[str] = Query(None, description="Filter by claim type"),
+    page: int = Query(1, ge=1, description="Page number for pagination"),
+    page_size: int = Query(10, ge=1, le=100, description="Page size for pagination"),
+    user=Depends(get_current_user)
+):
+    # Use 'status', 'type', 'page', 'page_size' as filters in your logic
+    ...
+```
+
+If the frontend calls `/claims?status=Open&type=Auto`, those values are automatically available in the `status` and `type` arguments.
+
+### Path Parameters
+
+Define them in the route and as function arguments:
+
+```python
+@router.get("/claims/{id}")
+def get_claim(id: str, user=Depends(get_current_user)):
+    # 'id' will contain the value from the URL path
+    ...
+```
+
+### Body Parameters
+
+Use a Pydantic model as a function argument for POST/PUT requests:
+
+```python
+from app.models.claim import ClaimCreateRequest
+
+@router.post("/claims")
+def create_claim(data: ClaimCreateRequest, user=Depends(get_current_user)):
+    # 'data' will be an instance of ClaimCreateRequest with the parsed JSON body
+    ...
+```
+
+### Example: Combining Query, Path, and Body Parameters
+
+You can combine all types of parameters in a single endpoint:
+
+```python
+from fastapi import Query, Path, Body, Depends
+from typing import Optional
+from app.models.claim import ClaimCreateRequest
+
+@router.post("/claims/{claim_id}")
+def update_claim(
+    claim_id: str = Path(..., description="Claim ID from the URL"),
+    status: Optional[str] = Query(None, description="Optional status filter"),
+    data: ClaimCreateRequest = Body(...),
+    user=Depends(get_current_user)
+):
+    # 'claim_id' from the path, 'status' from query, 'data' from body
+    ...
+```
 
 --- 

@@ -1,44 +1,21 @@
 from fastapi import APIRouter, Query, Depends
-from pydantic import BaseModel
-from typing import List, Optional
 from app.api.auth import get_current_user
+from app.models.base import APIResponse, APIError
+from app.models.policy import PolicySummary, PolicyDetail
+from typing import List, Optional
 
 router = APIRouter()
 
-class PolicySummary(BaseModel):
-    id: str
-    contract_name: str
-    policy_number: str
-    status: str
-    payment: str
-    next_payment: Optional[str]
-    effective_date: str
-    expiration_date: str
-    type: str
-
-class PolicyDetail(BaseModel):
-    id: str
-    contract_name: str
-    policy_number: str
-    status: str
-    payment: str
-    payment_frequency: str
-    next_payment: Optional[str]
-    effective_date: str
-    expiration_date: str
-    manager: str
-    type: str
-
-@router.get("", response_model=List[PolicySummary])
+@router.get("", response_model=APIResponse[List[PolicySummary]])
 def list_policies(user=Depends(get_current_user),
     status: Optional[str] = Query(None, description="Filter by policy status"),
     type: Optional[str] = Query(None, description="Filter by policy type"),
     page: int = Query(1, ge=1, description="Page number for pagination"),
     page_size: int = Query(10, ge=1, le=100, description="Page size for pagination")
-) -> List[PolicySummary]:
+) -> APIResponse[List[PolicySummary]]:
     """Return a list of all user policies with optional filters and pagination (mocked)."""
     # Filtering and pagination are mocked
-    return [
+    data = [
         PolicySummary(
             id="HOM123",
             contract_name="Home Insurance Basic",
@@ -62,11 +39,12 @@ def list_policies(user=Depends(get_current_user),
             type="auto"
         )
     ]
+    return APIResponse(data=data, error=None, count=len(data), status_code=200)
 
-@router.get("/{id}", response_model=PolicyDetail)
-def get_policy(id: str, user=Depends(get_current_user)) -> PolicyDetail:
+@router.get("/{id}", response_model=APIResponse[PolicyDetail])
+def get_policy(id: str, user=Depends(get_current_user)) -> APIResponse[PolicyDetail]:
     """Return details for a specific policy (mocked)."""
-    return PolicyDetail(
+    detail = PolicyDetail(
         id=id,
         contract_name="Home Insurance Basic" if id.startswith("HOM") else "Auto Insurance Plus",
         policy_number="POL123456" if id.startswith("HOM") else "POL654321",
@@ -78,4 +56,5 @@ def get_policy(id: str, user=Depends(get_current_user)) -> PolicyDetail:
         expiration_date="2026-01-15" if id.startswith("HOM") else "2025-05-10",
         manager="Jane Doe",
         type="home" if id.startswith("HOM") else "auto"
-    ) 
+    )
+    return APIResponse(data=detail, error=None, count=None, status_code=200) 

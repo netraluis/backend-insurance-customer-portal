@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Depends
 from pydantic import BaseModel
 from typing import List, Optional
+from app.api.auth import get_current_user
 
 router = APIRouter()
 
@@ -29,7 +30,7 @@ class PolicyDetail(BaseModel):
     type: str
 
 @router.get("", response_model=List[PolicySummary])
-def list_policies(
+def list_policies(user=Depends(get_current_user),
     status: Optional[str] = Query(None, description="Filter by policy status"),
     type: Optional[str] = Query(None, description="Filter by policy type"),
     page: int = Query(1, ge=1, description="Page number for pagination"),
@@ -63,7 +64,7 @@ def list_policies(
     ]
 
 @router.get("/{id}", response_model=PolicyDetail)
-def get_policy(id: str) -> PolicyDetail:
+def get_policy(id: str, user=Depends(get_current_user)) -> PolicyDetail:
     """Return details for a specific policy (mocked)."""
     return PolicyDetail(
         id=id,

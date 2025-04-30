@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.routing import APIRouter
 from app.api import auth, policies, claims, documents
+from dotenv import load_dotenv
+
+load_dotenv()
 
 api_v1 = APIRouter()
 

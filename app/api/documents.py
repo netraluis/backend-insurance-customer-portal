@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Query, UploadFile, File
+from fastapi import APIRouter, Query, UploadFile, File, Depends
 from pydantic import BaseModel
 from typing import List, Optional
+from app.api.auth import get_current_user
 
 router = APIRouter()
 
@@ -42,12 +43,12 @@ class DocumentUploadResponse(BaseModel):
     url: str
 
 @router.get("", response_model=List[DocumentSummary])
-def list_documents(
+def list_documents(user=Depends(get_current_user),
     policy_id: Optional[str] = Query(None, description="Filter by policy id"),
     claim_id: Optional[str] = Query(None, description="Filter by claim id"),
     billing: Optional[str] = Query(None, description="Filter by billing"),
     type: Optional[str] = Query(None, description="Filter by document type"),
-    category: Optional[str] = Query(None, description="Filter by category"),
+    category: Optional[str] = Query(None, description="Filter by document category"),
     page: int = Query(1, ge=1, description="Page number for pagination"),
     page_size: int = Query(10, ge=1, le=100, description="Page size for pagination")
 ) -> List[DocumentSummary]:
@@ -74,7 +75,7 @@ def list_documents(
     ]
 
 @router.get("/{id}", response_model=DocumentDetail)
-def get_document(id: str) -> DocumentDetail:
+def get_document(id: str, user=Depends(get_current_user)) -> DocumentDetail:
     """Return details for a specific document (mocked)."""
     return DocumentDetail(
         id=id,
@@ -88,15 +89,14 @@ def get_document(id: str) -> DocumentDetail:
     )
 
 @router.post("", response_model=DocumentUploadResponse)
-def upload_document(
-    file: UploadFile = File(...),
+def upload_document(file: UploadFile = File(...),
     name: str = Query(...),
     category: str = Query(...),
     policy_id: Optional[str] = Query(None),
     claim_id: Optional[str] = Query(None),
     billing: Optional[str] = Query(None),
-    type: str = Query(...)
-) -> DocumentUploadResponse:
+    type: str = Query(...),
+    user=Depends(get_current_user)) -> DocumentUploadResponse:
     """Upload a new document (mocked)."""
     return DocumentUploadResponse(
         id="DOC999",

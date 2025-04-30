@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Query, Path
+from fastapi import APIRouter, Query, Path, Depends
 from pydantic import BaseModel
 from typing import List, Optional
+from app.api.auth import get_current_user
 
 router = APIRouter()
 
@@ -36,9 +37,10 @@ class ClaimCreateResponse(BaseModel):
     contract_name: str
 
 @router.get("", response_model=List[ClaimSummary])
-def list_claims(
+def list_claims(user=Depends(get_current_user),
     policy_id: Optional[str] = Query(None, description="Filter by policy id"),
     status: Optional[str] = Query(None, description="Filter by claim status"),
+    type: Optional[str] = Query(None, description="Filter by claim type"),
     page: int = Query(1, ge=1, description="Page number for pagination"),
     page_size: int = Query(10, ge=1, le=100, description="Page size for pagination")
 ) -> List[ClaimSummary]:
@@ -65,7 +67,7 @@ def list_claims(
     ]
 
 @router.get("/{id}", response_model=ClaimDetail)
-def get_claim(id: str) -> ClaimDetail:
+def get_claim(id: str, user=Depends(get_current_user)) -> ClaimDetail:
     """Return details for a specific claim (mocked)."""
     return ClaimDetail(
         id=id,
@@ -78,10 +80,8 @@ def get_claim(id: str) -> ClaimDetail:
     )
 
 @router.post("/policies/{policy_id}/claims", response_model=ClaimCreateResponse)
-def create_claim(
-    policy_id: str = Path(..., description="Policy ID to which the claim belongs"),
-    data: ClaimCreateRequest = ...
-) -> ClaimCreateResponse:
+def create_claim(policy_id: str = Path(..., description="Policy ID to which the claim belongs"),
+    data: ClaimCreateRequest = ..., user=Depends(get_current_user)) -> ClaimCreateResponse:
     """Create a new claim for a given policy (mocked)."""
     return ClaimCreateResponse(
         id="CLM999",

@@ -3,6 +3,7 @@
 ## Requirements
 - Python 3.8+
 - pip
+- python-dotenv (for loading environment variables from .env)
 
 ## Installation and Virtual Environment
 
@@ -12,6 +13,23 @@ source venv/bin/activate  # On Mac/Linux
 # venv\Scripts\activate  # On Windows
 pip install -r requirements.txt
 ```
+
+## Environment Variables
+
+You must set the following environment variables for Supabase integration in a `.env` file in the project root. The variables will be loaded automatically using `python-dotenv`:
+- `SUPABASE_URL`: Your Supabase project URL
+- `SUPABASE_KEY`: Your Supabase anon or service role key
+
+Example `.env` file:
+```
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your-anon-or-service-role-key
+```
+
+> **Best Practice:**
+> - Never commit your `.env` file to version control (e.g., Git). It should always be listed in your `.gitignore`.
+> - Do not share your `.env` file or sensitive keys publicly.
+> - Use different keys for development and production environments.
 
 ## Start the Server
 
@@ -31,6 +49,50 @@ npx openapi-typescript http://localhost:8000/v1/openapi.json --output src/types/
 
 All endpoints are now prefixed with `/v1` (e.g., `/v1/health`, `/v1/auth/login`).
 
+## Authentication and Protected Endpoints (Supabase)
+
+- **Authentication and session management are handled entirely by Supabase.**
+- The frontend (e.g., React, Next.js) uses the Supabase JS client for login, registration, magic link, etc.
+- After login, the frontend receives a JWT (session token) from Supabase.
+- The frontend must send this token in the `Authorization` header for all protected backend requests:
+
+```
+Authorization: Bearer <your_supabase_jwt>
+```
+
+- The backend uses the official Supabase Python client (`supabase-py`) to validate the token and obtain the user for each protected endpoint.
+- **No JWT Secret is needed in the backend.**
+- All protected endpoints use the dependency:
+
+```python
+def get_current_user(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    token = authorization.replace("Bearer ", "")
+    res = supabase.auth.get_user(token)
+    if not res.get("user"):
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    return res["user"]
+```
+
+And in the endpoints:
+
+```python
+@router.get("/me")
+def me(user=Depends(get_current_user)):
+    return {"id": user["id"], "email": user["email"]}
+```
+
+- If the token is invalid or missing, the backend will automatically return a 401 error.
+
+## Protected Endpoints
+
+All the following endpoints **require a valid Supabase Bearer token** in the `Authorization` header:
+- `GET /v1/auth/me`
+- All `/v1/policies/*` endpoints
+- All `/v1/claims/*` endpoints
+- All `/v1/documents/*` endpoints
+
 ## Swagger (API Documentation)
 
 You can view the interactive Swagger UI at:
@@ -46,24 +108,24 @@ All endpoints return mock/example data for easy testing with the frontend or too
 ### Health Check
 - `GET /v1/health` — Check if the server is running
 
-### Auth
+### Auth (Supabase)
 - `POST /v1/auth/magic-link` — Send magic link to user email
 - `POST /v1/auth/set-password` — Set password using magic link token
 - `POST /v1/auth/login` — User login
 - `POST /v1/auth/reset-password` — User reset password (send reset email)
-- `POST /v1/auth/register` — User registration
-- `GET /v1/auth/me` — Get authenticated user info
+- `POST /v1/auth/register` — User registration (mock)
+- `GET /v1/auth/me` — Get authenticated user info (**requires Bearer token**)
 
-### Policies
+### Policies (**requires Bearer token**)
 - `GET /v1/policies` — List all user policies (with filters and pagination)
 - `GET /v1/policies/{id}` — Get policy details
 
-### Claims
+### Claims (**requires Bearer token**)
 - `GET /v1/claims` — List user claims (with filters and pagination)
 - `GET /v1/claims/{id}` — Get claim details
 - `POST /v1/policies/{id}/claims` — Create a new claim for a policy
 
-### Documents
+### Documents (**requires Bearer token**)
 - `GET /v1/documents` — List user documents (with filters and pagination)
 - `GET /v1/documents/{id}` — Get/download a document
 - `POST /v1/documents` — Upload a document
@@ -75,7 +137,7 @@ All endpoints return mock/example data for easy testing with the frontend or too
 curl http://localhost:8000/v1/health
 ```
 
-### Auth
+### Auth (Supabase)
 ```bash
 curl -X POST http://localhost:8000/v1/auth/magic-link -H 'Content-Type: application/json' -d '{"email": "user@example.com"}'
 
@@ -87,27 +149,28 @@ curl -X POST http://localhost:8000/v1/auth/reset-password -H 'Content-Type: appl
 
 curl -X POST http://localhost:8000/v1/auth/register -H 'Content-Type: application/json' -d '{"first_name": "John", "last_name": "Doe", "birth_date": "1990-01-01", "document_id": "NRT123456", "email": "user@example.com", "address": "123 Main St", "user_id": "USR001", "username": "johndoe", "phone": "+123456789", "password": "password"}'
 
-curl http://localhost:8000/v1/auth/me
+# Requires Bearer token:
+curl -H 'Authorization: Bearer <your_supabase_jwt>' http://localhost:8000/v1/auth/me
 ```
 
-### Policies
+### Policies (protected)
 ```bash
-curl http://localhost:8000/v1/policies
-curl http://localhost:8000/v1/policies/HOM123
+curl -H 'Authorization: Bearer <your_supabase_jwt>' http://localhost:8000/v1/policies
+curl -H 'Authorization: Bearer <your_supabase_jwt>' http://localhost:8000/v1/policies/HOM123
 ```
 
-### Claims
+### Claims (protected)
 ```bash
-curl http://localhost:8000/v1/claims
-curl http://localhost:8000/v1/claims/CLM001
-curl -X POST http://localhost:8000/v1/policies/HOM123/claims -H 'Content-Type: application/json' -d '{"description": "Water damage in kitchen"}'
+curl -H 'Authorization: Bearer <your_supabase_jwt>' http://localhost:8000/v1/claims
+curl -H 'Authorization: Bearer <your_supabase_jwt>' http://localhost:8000/v1/claims/CLM001
+curl -X POST -H 'Authorization: Bearer <your_supabase_jwt>' -H 'Content-Type: application/json' http://localhost:8000/v1/policies/HOM123/claims -d '{"description": "Water damage in kitchen"}'
 ```
 
-### Documents
+### Documents (protected)
 ```bash
-curl http://localhost:8000/v1/documents
-curl http://localhost:8000/v1/documents/DOC001
-# For upload, use Postman or a tool that supports multipart/form-data
+curl -H 'Authorization: Bearer <your_supabase_jwt>' http://localhost:8000/v1/documents
+curl -H 'Authorization: Bearer <your_supabase_jwt>' http://localhost:8000/v1/documents/DOC001
+# For upload, use Postman or a tool that supports multipart/form-data and include the Bearer token
 ```
 
 ---
@@ -124,5 +187,6 @@ All endpoints return mock/example data to facilitate frontend development.
 - **sqlalchemy**: For ORM/database access, if you want to persist data. Alternatives: Tortoise ORM (async, less mature), peewee (simpler, less features), Django ORM (tied to Django framework).
 - **email-validator**: Required by Pydantic for validating email fields. Alternatives: validate_email (less integrated), custom regex (less robust).
 - **python-multipart**: Required by FastAPI for handling form data and file uploads. Alternatives: starlette's built-in multipart (lower-level, less user-friendly).
+- **supabase**: Official Python client for Supabase, used for authentication and user management.
 
 --- 

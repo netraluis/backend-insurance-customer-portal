@@ -1,6 +1,17 @@
 from app.models.base import APIResponse, api_response
 from app.models.claim import ClaimSummary, ClaimDetail, ClaimCreateRequest, ClaimCreateResponse
 from typing import List, Optional
+from app.services.soap_session import get_security_context
+from zeep import Client
+
+# The WSDL URL for the SOAP service that handles claim-related actions
+CLAIM_SOAP_URL = "http://192.192.192.109:8080/soap/IBasActionService?wsdl"
+
+# This function retrieves a list of claims from the SOAP backend
+# It manages the SOAP session automatically and calls the generic RunAction method
+# The action name ("GetClaims") must match an action implemented on the backend
+# The params dictionary can be used to pass filters or other parameters if needed
+# The function returns the data part of the SOAP response, which should contain the claims
 
 def list_claims_service(policy_id: Optional[str], status: Optional[str], type: Optional[str], page: int, page_size: int) -> APIResponse[List[ClaimSummary]]:
     # TODO: Implement logic to fetch and filter claims from the database or external service.
@@ -56,4 +67,21 @@ def create_claim_service(data: ClaimCreateRequest) -> APIResponse[ClaimCreateRes
         policy_id=data.policy_id,
         contract_name="Home Insurance Basic" if data.policy_id == "HOM123" else "Auto Insurance Plus"
     )
-    return api_response(data=response, status_code=201) 
+    return api_response(data=response, status_code=201)
+
+def list_claims_service():
+    # Obtain a valid security context (SessionId and IsAuthenticated) for the SOAP request
+    sc = get_security_context()
+    # Create a SOAP client for the claims service
+    client = Client(CLAIM_SOAP_URL)
+    # Call the generic RunAction method on the SOAP backend
+    # - sc: the security context (authentication/session info)
+    # - name: the name of the action to execute (must be recognized by the backend)
+    # - params: additional parameters for the action (empty here, but can include filters)
+    result = client.service.RunAction(
+        sc=sc,
+        name="GetClaims",
+        params={}
+    )
+    # Return the data field from the SOAP response, which should contain the list of claims
+    return result.Data  # Or adjust as needed based on the actual SOAP response structure 

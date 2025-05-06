@@ -4,4 +4,5 @@ pydantic
 email-validator
 python-multipart
 supabase
-python-dotenv 
+python-dotenv
+zeep 

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Header
 from app.models.auth import (
     MagicLinkRequest, MagicLinkResponse, SetPasswordRequest, LoginRequest, LoginResponse,
     ResetPasswordRequest, ResetPasswordResponse, RegisterRequest, RegisterResponse, UserResponse,
-    ValidationEmailRequest, ValidationEmailResponse
+    ValidationEmailRequest, ValidationEmailResponse, VerifyOTPRequest, VerifyOTPResponse
 )
 from app.models.base import APIResponse, APIError, api_response
 import os
@@ -14,7 +14,8 @@ from app.services.auth_service import (
     reset_password_service,
     register_service,
     get_current_user_service,
-    send_otp_email_service
+    send_otp_email_service,
+    verify_otp_service
 )
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -48,6 +49,10 @@ def reset_password(data: ResetPasswordRequest):
 @router.post("/register", response_model=APIResponse[RegisterResponse])
 def register(data: RegisterRequest):
     return register_service(data)
+
+@router.post("/verify-otp", response_model=APIResponse[VerifyOTPResponse])
+def verify_otp(data: VerifyOTPRequest):
+    return verify_otp_service(data)
 
 def get_current_user(authorization: str = Header(...)):
     return get_current_user_service(authorization)

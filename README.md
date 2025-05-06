@@ -110,6 +110,7 @@ All endpoints return mock/example data for easy testing with the frontend or too
 
 ### Auth (Supabase)
 - `POST /v1/auth/validation-email` — Send OTP code to user email for validation
+- `POST /v1/auth/verify-otp` — Verify OTP code and get access token
 - `POST /v1/auth/magic-link` — Send magic link to user email
 - `POST /v1/auth/set-password` — Set password using magic link token
 - `POST /v1/auth/login` — User login
@@ -149,8 +150,20 @@ curl http://localhost:8000/v1/health
 
 ### Auth (Supabase)
 ```bash
-# Send OTP code for email validation
-curl -X POST http://localhost:8000/v1/auth/validation-email -H 'Content-Type: application/json' -d '{"email": "user@example.com"}'
+# Step 1: Request OTP code
+curl -X POST http://localhost:8000/v1/auth/validation-email \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "email": "user@example.com"
+  }'
+
+# Step 2: Verify OTP code
+curl -X POST http://localhost:8000/v1/auth/verify-otp \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "email": "user@example.com",
+    "token": "123456"
+  }'
 
 curl -X POST http://localhost:8000/v1/auth/magic-link -H 'Content-Type: application/json' -d '{"email": "user@example.com"}'
 

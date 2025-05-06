@@ -61,4 +61,14 @@ class ValidationEmailRequest(BaseModel):
 
 class ValidationEmailResponse(BaseModel):
     message: str
-    otp_sent: bool 
+    otp_sent: bool
+
+class VerifyOTPRequest(BaseModel):
+    email: EmailStr
+    token: str
+
+class VerifyOTPResponse(BaseModel):
+    message: str
+    access_token: Optional[str] = None
+    token_type: Optional[str] = None
+    user: Optional[Dict] = None 

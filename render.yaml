@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: backend-insurance-customer-portal
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false   # No pongas el valor aquí
+      - key: SUPABASE_KEY
+        sync: false   # No pongas el valor aquí

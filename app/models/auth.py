@@ -54,4 +54,11 @@ class UserResponse(BaseModel):
     birth_date: str
     document_id: str
     address: str
-    phone: str 
+    phone: str
+
+class ValidationEmailRequest(BaseModel):
+    email: EmailStr
+
+class ValidationEmailResponse(BaseModel):
+    message: str
+    otp_sent: bool 

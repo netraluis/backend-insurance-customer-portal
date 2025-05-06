@@ -1,9 +1,15 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.routing import APIRouter
 from fastapi.responses import JSONResponse
 from app.api import auth, policies, claims, documents
 from dotenv import load_dotenv
 from app.models.base import APIResponse, APIError
+import traceback
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -33,18 +39,31 @@ async def generic_exception_handler(request: Request, exc: Exception):
     Global exception handler for uncaught exceptions.
     Returns a standardized APIResponse with error details.
     """
-    # You can log the error here if needed
+    # Log the error with traceback
+    logger.error(f"Unhandled exception: {str(exc)}")
+    logger.error(traceback.format_exc())
+
+    # Determine if it's a known error type
+    if isinstance(exc, HTTPException):
+        status_code = exc.status_code
+        error_message = exc.detail
+    else:
+        status_code = 500
+        error_message = "Internal Server Error"
+
+    # Create error response
     response = APIResponse(
         data=None,
         error=APIError(
-            message="Internal Server Error",
-            details=str(exc),  # In production, you might want to hide this
-            code="internal_error"
+            message=error_message,
+            details=str(exc) if status_code != 500 else None,  # Hide details in production for 500 errors
+            code="internal_error" if status_code == 500 else "error"
         ),
         count=None,
-        status_code=500
+        status_code=status_code
     )
+
     return JSONResponse(
-        status_code=500,
+        status_code=status_code,
         content=response.dict()
     ) 

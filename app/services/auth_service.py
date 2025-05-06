@@ -4,7 +4,8 @@ load_dotenv()
 from supabase import create_client, Client
 from app.models.auth import (
     MagicLinkRequest, MagicLinkResponse, SetPasswordRequest, LoginRequest, LoginResponse,
-    ResetPasswordRequest, ResetPasswordResponse, RegisterRequest, RegisterResponse, UserResponse
+    ResetPasswordRequest, ResetPasswordResponse, RegisterRequest, RegisterResponse, UserResponse,
+    ValidationEmailRequest, ValidationEmailResponse
 )
 from app.models.base import APIResponse, APIError, api_response
 
@@ -73,4 +74,27 @@ def get_current_user_service(authorization: str):
     res = supabase.auth.get_user(token)
     if not res.get("user"):
         return api_response(error=APIError(message="Invalid or expired token"), status_code=401)
-    return res["user"] 
+    return res["user"]
+
+def send_otp_email_service(data: ValidationEmailRequest):
+    try:
+        res = supabase.auth.sign_in_with_otp({
+            "email": data.email,
+            "options": {
+                "should_create_user": False
+            }
+        })
+        
+        # La respuesta de Supabase es un objeto AuthOtpResponse
+        if hasattr(res, 'error') and res.error:
+            return api_response(error=APIError(message=str(res.error)), status_code=400)
+            
+        return api_response(
+            data=ValidationEmailResponse(
+                message="OTP code sent to email.",
+                otp_sent=True
+            ),
+            status_code=200
+        )
+    except Exception as e:
+        return api_response(error=APIError(message=str(e)), status_code=500) 

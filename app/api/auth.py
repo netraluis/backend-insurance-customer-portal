@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, Header
 from app.models.auth import (
     MagicLinkRequest, MagicLinkResponse, SetPasswordRequest, LoginRequest, LoginResponse,
-    ResetPasswordRequest, ResetPasswordResponse, RegisterRequest, RegisterResponse, UserResponse
+    ResetPasswordRequest, ResetPasswordResponse, RegisterRequest, RegisterResponse, UserResponse,
+    ValidationEmailRequest, ValidationEmailResponse
 )
 from app.models.base import APIResponse, APIError, api_response
 import os
@@ -12,7 +13,8 @@ from app.services.auth_service import (
     login_service,
     reset_password_service,
     register_service,
-    get_current_user_service
+    get_current_user_service,
+    send_otp_email_service
 )
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -22,6 +24,10 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 router = APIRouter()
 
 # --- Endpoints ---
+
+@router.post("/validation-email", response_model=APIResponse[ValidationEmailResponse])
+def send_validation_email(data: ValidationEmailRequest):
+    return send_otp_email_service(data)
 
 @router.post("/magic-link", response_model=APIResponse[MagicLinkResponse])
 def send_magic_link(data: MagicLinkRequest):

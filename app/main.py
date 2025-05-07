@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from app.models.base import APIResponse, APIError
 import traceback
 import logging
-
+from fastapi.middleware.cors import CORSMiddleware
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -30,6 +30,15 @@ def root():
     return {"message": "API Insurance Customer Portal"}
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # O tu dominio ["http://localhost:3000"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(api_v1, prefix="/v1")
 
 # Global exception handler for uncaught exceptions
